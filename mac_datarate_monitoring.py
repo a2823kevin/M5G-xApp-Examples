@@ -1,12 +1,12 @@
-import xapp_sdk
+import xapp_sdk as ric
 import time
 
 def bpsToMbps(dataRate):
-    return dataRate /1e6
+    return dataRate / 1e6
 
-class MACCallback(xapp_sdk.mac_cb):
+class MACCallback(ric.mac_cb):
     def __init__(self):
-        xapp_sdk.mac_cb.__init__(self)
+        ric.mac_cb.__init__(self)
         self.prev_tstamp = 0
         self.prev_ul_total_bytes = 0
         self.prev_dl_total_bytes = 0
@@ -15,8 +15,9 @@ class MACCallback(xapp_sdk.mac_cb):
         if (len(ind.ue_stats)>0):
             for i in range(len(ind.ue_stats)):
                 #Calculate the datarate by dividing the TX bytes by time difference between 2 indications
-                ul_data_rate = (ind.ue_stats[i].ul_aggr_tbs-self.prev_ul_total_bytes) * 8 / (ind.tstamp-self.prev_tstamp)
-                dl_data_rate = (ind.ue_stats[i].dl_aggr_tbs-self.prev_dl_total_bytes) * 8 / (ind.tstamp-self.prev_tstamp)
+                interval = (ind.tstamp-self.prev_tstamp) / 1e6
+                ul_data_rate = (ind.ue_stats[i].ul_aggr_tbs-self.prev_ul_total_bytes) * 8 / interval
+                dl_data_rate = (ind.ue_stats[i].dl_aggr_tbs-self.prev_dl_total_bytes) * 8 / interval
                 if (ul_data_rate<=0 or dl_data_rate<=0):
                     return
                 
@@ -30,10 +31,10 @@ class MACCallback(xapp_sdk.mac_cb):
 
 if (__name__=="__main__"):
     #E42 Setup
-    xapp_sdk.init()
+    ric.init()
     
     #get available E2 Nodes
-    conn = xapp_sdk.conn_e2_nodes()
+    conn = ric.conn_e2_nodes()
     assert(len(conn)>0)
     
     
@@ -43,7 +44,7 @@ if (__name__=="__main__"):
         MAC_cb = MACCallback()
         
         #Report Subscription
-        hndlr = xapp_sdk.report_mac_sm(conn[i].id, xapp_sdk.Interval_ms_1, MAC_cb)
+        hndlr = ric.report_mac_sm(conn[i].id, ric.Interval_ms_1, MAC_cb)
         handlers.append(hndlr)
         
     #keep the subscription for 10 sec
@@ -51,7 +52,7 @@ if (__name__=="__main__"):
     
     for i in range(len(handlers)):
         #Cancel Report Subscription
-        xapp_sdk.rm_report_mac_sm(handlers[i])
+        ric.rm_report_mac_sm(handlers[i])
         
-    while (xapp_sdk.try_stop==0):
+    while (ric.try_stop==0):
         time.sleep(1)
